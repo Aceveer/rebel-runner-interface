@@ -11,6 +11,7 @@ export default function NewRequestPage() {
   const [requests, setRequests] = useState([
     {
       category: 'Mens',
+      typeOfShoe: 'Running',
       brand: '',
       model: '',
       colourCode: '',
@@ -31,6 +32,7 @@ export default function NewRequestPage() {
       ...requests,
       {
         category: 'Mens',
+        typeOfShoe: 'Running',
         brand: '',
         model: '',
         colourCode: '',
@@ -101,6 +103,21 @@ export default function NewRequestPage() {
                 <option>Womens</option>
                 <option>Kids</option>
               </select>
+
+            {/* NEW: Shoe Type */}
+            <select
+                className="border p-3 rounded-xl bg-black"
+                value={req.typeOfShoe || 'Running'}
+                onChange={e => updateField(i, 'typeOfShoe', e.target.value)}
+            >
+                <option>Running</option>
+                <option>Gym/Training</option>
+                <option>Casual</option>
+                <option>Raceday</option>
+                <option>Basketball</option>
+                <option>Cricket</option>
+            </select>
+
               <input
                 className="border p-3 rounded-xl"
                 placeholder="Brand"
