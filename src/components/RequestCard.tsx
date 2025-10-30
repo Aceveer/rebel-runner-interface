@@ -13,8 +13,10 @@ type RequestCardProps = {
   claimedBy?: { name?: string } | null
   notes?: string | null
   createdAt?: { seconds: number }
+  createdBy?:{email:string}
   showAction?: boolean
   onAction?: () => void
+  role: string
 }
 
 export default function RequestCard({
@@ -28,12 +30,14 @@ export default function RequestCard({
   claimedBy,
   notes,
   createdAt,
+  createdBy,
   showAction = false,
   onAction,
+  role,
 }: RequestCardProps) {
   const categoryInitial = category?.[0]?.toUpperCase() ?? '?'
   const [elapsed, setElapsed] = useState<string>('')
-
+  const [elapsedMins, setElapsedMins] = useState<number>(0)
   // 🕒 Timer
   useEffect(() => {
     if (!createdAt?.seconds) return
@@ -45,6 +49,7 @@ export default function RequestCard({
       const mins = Math.floor(diffMs / 60000)
       const secs = Math.floor((diffMs % 60000) / 1000)
       setElapsed(`${mins}m ${secs}s`)
+      setElapsedMins(mins)
     }
 
     update()
@@ -52,8 +57,15 @@ export default function RequestCard({
     return () => clearInterval(interval)
   }, [createdAt])
 
+  const textClass =
+    elapsedMins < 2
+      ? 'text-green-400'
+      : elapsedMins < 5
+      ? 'text-yellow-400'
+      : 'text-red-400'
+
   return (
-    <div className="flex w-xs md:w-lg border rounded-2xl bg-white dark:bg-zinc-900 shadow-sm hover:shadow-md transition align-middle self-center ">
+    <div className={`flex w-2xs md:w-lg border rounded-2xl shadow-sm hover:shadow-md transition align-middle self-center`}>
       
       {/* Left side (Category section) */}
       <div className="flex flex-col items-center justify-center w-16 md:w-24 rounded-l-2xl bg-zinc-800 p-2 border-r">
@@ -77,14 +89,15 @@ export default function RequestCard({
 
         {/* Middle: Timer */}
         <div className="flex justify-center mt-6 mx-2 align-middle">
-          {elapsed && (
-            <span className="text-xs text-blue-600 font-mono">{elapsed}</span>
+          {elapsed && (role==="queued") && (
+            <span className={`text-sm md:text-lg ${textClass}`}>{elapsed}</span>
           )}
         </div>
 
           <div className="text-right">
             <p className="font-semibold text-sm md:text-base">{size}</p>
-            <p className="text-xs md:text-sm text-zinc-500">Qty {quantity}</p>
+            <p className="text-xs md:text-sm text-zinc-600">Qty {quantity}</p>
+            <p className="text-[10px] md:text-sm text-zinc-500">Created by {createdBy?.email.split("@")[0]}</p>
           </div>
         </div>
 
@@ -93,7 +106,7 @@ export default function RequestCard({
         {/* Bottom: Notes + Runner + Action */}
         <div className="mt-3 border-t pt-2 flex justify-between items-center text-xs text-zinc-600">
           <div className="flex flex-col">
-            <span>{notes || 'No additional notes'}</span>
+            <span className='mb-2'>{notes || 'No additional notes'}</span>
             {claimedBy?.name && (
               <span className="text-amber-700 mt-1">Runner: {claimedBy.name.split('@')[0]}</span>
             )}

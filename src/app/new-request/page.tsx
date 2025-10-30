@@ -43,6 +43,13 @@ export default function NewRequestPage() {
       },
     ])
 
+const removeRequest = (index: number) => {
+  if (requests.length === 1) return // prevent deleting the only one
+  const newReqs = [...requests]
+  newReqs.splice(index, 1)
+  setRequests(newReqs)
+}
+
   const updateField = (index: number, field: string, value: string | number) => {
     const newReqs = [...requests]
     // @ts-ignore
@@ -50,37 +57,54 @@ export default function NewRequestPage() {
     setRequests(newReqs)
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setLoading(true)
-    setError(null)
-    try {
-      const user = auth.currentUser
-      if (!user) throw new Error('Not signed in')
+async function handleSubmit(e: React.FormEvent) {
+  e.preventDefault()
+  setLoading(true)
+  setError(null)
 
-      const token = await user.getIdToken()
-      const res = await fetch('/api/requests', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(requests), // array payload
-      })
-
-      if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.error || 'Failed to create request')
+  try {
+    // 🧩 Validation for mandatory fields
+    for (const [index, req] of requests.entries()) {
+      if (
+        !req.category?.trim() ||
+        !req.typeOfShoe?.trim() ||
+        !req.brand?.trim() ||
+        !req.model?.trim() ||
+        !req.colourCode?.trim() ||
+        !req.size?.trim()
+      ) {
+        setLoading(false)
+        setError(`Fill in all mandatory fields for Request ${index + 1}`)
+        return
       }
-
-      router.push('/home')
-    } catch (err: any) {
-      console.error(err)
-      setError(err.message)
-    } finally {
-      setLoading(false)
     }
+
+    const user = auth.currentUser
+    if (!user) throw new Error('Not signed in')
+
+    const token = await user.getIdToken()
+    const res = await fetch('/api/requests', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(requests), // array payload
+    })
+
+    if (!res.ok) {
+      const data = await res.json()
+      throw new Error(data.error || 'Failed to create request')
+    }
+
+    router.push('/home')
+  } catch (err: any) {
+    console.error(err)
+    setError(err.message || 'Fill in all mandatory fields')
+  } finally {
+    setLoading(false)
   }
+}
 
   return (
     <main className="min-h-screen flex justify-center items-start p-4 ">
@@ -92,7 +116,18 @@ export default function NewRequestPage() {
 
         {requests.map((req, i) => (
           <div key={i} className="border rounded-2xl p-4 space-y-3 ">
-            <h2 className="font-medium text-lg">Request {i + 1}</h2>
+            <div className="flex justify-between items-center">
+              <h2 className="font-medium text-lg">Request {i + 1}</h2>
+              {requests.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => removeRequest(i)}
+                  className="text-red-500 text-sm font-semibold hover:text-red-700 transition"
+                >
+                  ✕ Remove
+                </button>
+              )}
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <select
                 className="border p-3 rounded-x bg-black"

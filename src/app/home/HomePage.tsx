@@ -125,8 +125,10 @@ export default function HomePage() {
                       claimedBy={r.claimedBy}
                       notes={r.notes}
                       createdAt={r.createdAt}
+                      createdBy={r.createdBy}
                       showAction={role === 'runner' && status === 'queued'}
                       onAction={() => markAsDone(r.id)}
+                      role= {status}
                     />
                   </div>
                 ))
