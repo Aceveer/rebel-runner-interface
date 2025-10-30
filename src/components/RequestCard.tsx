@@ -53,7 +53,7 @@ export default function RequestCard({
   }, [createdAt])
 
   return (
-    <div className="flex sm:w-[280px] md:w-lg border rounded-2xl bg-white dark:bg-zinc-900 shadow-sm hover:shadow-md transition align-middle self-center ">
+    <div className="flex w-xs md:w-lg border rounded-2xl bg-white dark:bg-zinc-900 shadow-sm hover:shadow-md transition align-middle self-center ">
       
       {/* Left side (Category section) */}
       <div className="flex flex-col items-center justify-center w-16 md:w-24 rounded-l-2xl bg-zinc-800 p-2 border-r">
@@ -76,14 +76,14 @@ export default function RequestCard({
           </div>
 
         {/* Middle: Timer */}
-        <div className="flex justify-center mt-2 align-middle">
+        <div className="flex justify-center mt-6 mx-2 align-middle">
           {elapsed && (
             <span className="text-xs text-blue-600 font-mono">{elapsed}</span>
           )}
         </div>
 
           <div className="text-right">
-            <p className="font-semibold text-sm md:text-base">Size {size}</p>
+            <p className="font-semibold text-sm md:text-base">{size}</p>
             <p className="text-xs md:text-sm text-zinc-500">Qty {quantity}</p>
           </div>
         </div>

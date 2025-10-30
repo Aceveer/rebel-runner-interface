@@ -106,7 +106,7 @@ export default function HomePage() {
               {status === 'queued' ? `In Queue ${grouped.queued.length}` : `Done ${grouped.done.length}`}
             </h2>
 
-            <div className="flex flex-row flex-wrap gap-4 overflow-x-auto pb-4 mx-1">
+            <div className="flex flex-row flex-wrap gap-4 overflow-x-auto pb-4 mx-1 align-middle">
               {grouped[status].length === 0 ? (
                 <p className="text-sm text-zinc-500 italic">
                   No shoes {status === 'queued' ? 'in queue' : 'done yet'}.
