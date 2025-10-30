@@ -151,12 +151,6 @@ export default function NewRequestPage() {
               />
               <input
                 className="border p-3 rounded-xl col-span-2"
-                placeholder="Customer Tag (optional)"
-                value={req.customerTag}
-                onChange={e => updateField(i, 'customerTag', e.target.value)}
-              />
-              <input
-                className="border p-3 rounded-xl col-span-2"
                 placeholder="Notes (optional)"
                 value={req.notes}
                 onChange={e => updateField(i, 'notes', e.target.value)}

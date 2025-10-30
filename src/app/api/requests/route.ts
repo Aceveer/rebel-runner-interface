@@ -11,9 +11,7 @@ const singleRequestSchema = z.object({
   colourCode: z.string().optional().default(''),
   size: z.string().min(1),
   quantity: z.number().int().min(1).max(10).default(1),
-  customerTag: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
-  barcode: z.string().optional().nullable(),
 })
 
 // allow array OR single object
@@ -53,9 +51,7 @@ export async function POST(req: Request) {
         colourCode: (data.colourCode ?? '').trim(),
         size: data.size.trim(),
         quantity: data.quantity,
-        customerTag: data.customerTag || null,
         notes: data.notes || null,
-        barcode: data.barcode || null,
       }
       batch.set(docRef, doc)
       resultIds.push(docRef.id)
@@ -81,17 +77,43 @@ export async function GET(req: Request) {
 
     // ✅ parse query params
     const { searchParams } = new URL(req.url)
-    const statuses = searchParams.get('status')?.split(',') ?? ['queued', 'inProgress', 'done']
-    const limit = Number(searchParams.get('limit') || 20)
+    const statuses = searchParams.get('status')?.split(',') ?? ['queued', 'done']
+    const limit = Number(searchParams.get('limit') || 50)
     const storeId = process.env.NEXT_PUBLIC_STORE_ID || 'REBEL-ADELAIDE'
 
-    // ✅ query Firestore
-    const ref = adminDb.collection('stores').doc(storeId).collection('requests')
+    const ref = adminDb
+      .collection('stores')
+      .doc(storeId)
+      .collection('requests')
+
     const snapshot = await ref.where('status', 'in', statuses).limit(limit).get()
+    const now = Date.now()
 
-    const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() }))
+    const freshData: any[] = []
+    const batch = adminDb.batch()
+    let deletedCount = 0
 
-    return NextResponse.json(data)
+    snapshot.docs.forEach(docSnap => {
+      const data = docSnap.data()
+      const createdAt = data.createdAt?._seconds || data.createdAt?.seconds
+      const diffHrs = createdAt ? (now - createdAt * 1000) / 3600000 : 0
+
+      if (diffHrs >= 24) {
+        // mark for deletion
+        batch.delete(docSnap.ref)
+        deletedCount++
+      } else {
+        freshData.push({ id: docSnap.id, ...data })
+      }
+    })
+
+    if (deletedCount > 0) await batch.commit()
+
+    return NextResponse.json({
+      deletedCount,
+      count: freshData.length,
+      data: freshData,
+    })
   } catch (err: any) {
     console.error('GET /requests error', err)
     return NextResponse.json(
@@ -100,3 +122,4 @@ export async function GET(req: Request) {
     )
   }
 }
+

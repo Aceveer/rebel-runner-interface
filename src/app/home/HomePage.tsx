@@ -11,26 +11,26 @@ import {
   doc,
   serverTimestamp,
 } from 'firebase/firestore'
-import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import { useRouter } from 'next/navigation'
 import RequestCard from '@/components/RequestCard'
-import { handleLogout } from '@/utils/logout'
+import Header from '@/components/Header'
 
 const STORE_ID = process.env.NEXT_PUBLIC_STORE_ID!
 
 type Request = {
   id: string
   category: string
-  typeOfShoe:string
+  typeOfShoe: string
   brand: string
   model: string
   colourCode?: string
   size: string
   quantity: number
-  status: 'queued' | 'inProgress' | 'done'
-  customerTag?: string
-  createdBy?: { uid: string; name?: string }
+  status: 'queued' | 'done'
+  createdAt?: { seconds: number }
   claimedBy?: { uid: string; name?: string } | null
+  notes?: string | null
+  createdBy: { email: string }
 }
 
 export default function HomePage() {
@@ -39,13 +39,13 @@ export default function HomePage() {
   const [user, setUser] = useState<any>(null)
   const [role, setRole] = useState<'seller' | 'runner'>('seller')
 
-  // 🔹 listen for auth
+  // 🔹 Auth listener
   useEffect(() => {
     const unsub = auth.onAuthStateChanged(u => setUser(u))
     return () => unsub()
   }, [])
 
-  // 🔹 fetch live requests
+  // 🔹 Fetch requests live
   useEffect(() => {
     const q = query(
       collection(db, `stores/${STORE_ID}/requests`),
@@ -58,84 +58,39 @@ export default function HomePage() {
     return () => unsub()
   }, [])
 
-  // 🔹 fetch activeRole from Firestore user doc
-  useEffect(() => {
+  // 🔹 Mark as Done handler
+  const markAsDone = async (reqId: string) => {
     if (!user) return
-    import('firebase/firestore').then(async ({ doc, getDoc }) => {
-      const ref = doc(db, 'users', user.uid)
-      const snap = await getDoc(ref)
-      if (snap.exists()) {
-        setRole(snap.data().activeRole)
-      }
-    })
-  }, [user])
-
-  // 🔹 drag handler (only runners)
-  const onDragEnd = async (result: any) => {
-    if (!result.destination || role !== 'runner') return
-    const { draggableId, destination, source } = result
-    const newStatus = destination.droppableId as Request['status']
-    if (source.droppableId === newStatus) return
-
-    const ref = doc(db, `stores/${STORE_ID}/requests/${draggableId}`)
+    const ref = doc(db, `stores/${STORE_ID}/requests/${reqId}`)
     const runner = {
       uid: user.uid,
       name: user.displayName || user.email,
     }
-    const updates: any = { status: newStatus }
-
-    if (newStatus === 'inProgress') {
-      updates.claimedBy = runner
-      updates.claimedAt = serverTimestamp()
-    }
-    if (newStatus === 'done') updates.completedAt = serverTimestamp()
-
-    await updateDoc(ref, updates)
+    await updateDoc(ref, {
+      status: 'done',
+      claimedBy: runner,
+      completedAt: serverTimestamp(),
+    })
   }
 
   const grouped = {
     queued: requests.filter(r => r.status === 'queued'),
-    inProgress: requests.filter(r => r.status === 'inProgress'),
     done: requests.filter(r => r.status === 'done'),
   }
 
   return (
-    <main className="min-h-screen  p-4">
+    <main className="min-h-screen p-4">
+      {/* ✅ Reusable Header */}
+      <Header />
 
-
-        <header className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-semibold">Footwear Queue</h1>
-
-          <div className="flex gap-3 items-center">
-            {role === 'seller' && (
-              <button
-                onClick={() => router.push('/new-request')}
-                className="bg-black text-yellow-400 px-4 py-2 rounded-xl font-medium"
-              >
-                + Add Request
-              </button>
-            )}
-
-            <button
-              onClick={async () => {
-                await handleLogout()
-                router.replace('/login')
-              }}
-              className="text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:text-red-600"
-            >
-              Logout
-            </button>
-          </div>
-        </header>
-
-      {/* role tabs */}
+      {/* Role Tabs (stay here) */}
       <div className="flex gap-3 mb-5">
         {['seller', 'runner'].map(r => (
           <button
             key={r}
             onClick={() => setRole(r as 'seller' | 'runner')}
-            className={`px-4 py-2 rounded-xl border ${
-              role === r ? 'bg-black text-yellow-400' : ''
+            className={`px-4 py-2 rounded-xl border transition ${
+              role === r ? 'bg-black text-yellow-400' : 'hover:bg-yellow-400 hover:text-black'
             }`}
           >
             {r === 'seller' ? 'Seller View' : 'Runner View'}
@@ -143,56 +98,54 @@ export default function HomePage() {
         ))}
       </div>
 
-      <DragDropContext onDragEnd={onDragEnd}>
-        <div className="grid md:grid-cols-3 gap-4">
-          {(['queued', 'inProgress', 'done'] as const).map(status => (
-            <Droppable droppableId={status} key={status}>
-              {provided => (
-                <div
-                  ref={provided.innerRef}
-                  {...provided.droppableProps}
-                  className=" rounded-2xl shadow-sm p-4 min-h-[60vh]"
-                >
-                  <h2 className="text-lg font-semibold mb-3 capitalize">
-                    {status === 'inProgress' ? 'In Progress' : status}
-                  </h2>
-                  {grouped[status].map((r, index) => (
-                    <Draggable
-                      key={r.id}
-                      draggableId={r.id}
-                      index={index}
-                      isDragDisabled={role !== 'runner'}
-                    >
-                      {drag => (
-                        <div
-                          ref={drag.innerRef}
-                          {...drag.draggableProps}
-                          {...drag.dragHandleProps}
-                          className={role === 'runner' ? 'cursor-grab' : ''}
-                        >
-                          <RequestCard
-                            category={r.category}
-                            typeOfShoe={r.typeOfShoe}
-                            brand={r.brand}
-                            model={r.model}
-                            colourCode={r.colourCode}
-                            size={r.size}
-                            quantity={r.quantity}
-                            customerTag={r.customerTag}
-                            claimedBy={r.claimedBy}
-                            // notes={r.notes}
-                          />
-                        </div>
-                      )}
-                    </Draggable>
-                  ))}
-                  {provided.placeholder}
-                </div>
+      {/* Queues */}
+      <div className="flex flex-col gap-10">
+        {(['queued', 'done'] as const).map(status => (
+          <div key={status} className="flex flex-col">
+            <h2 className="text-lg font-semibold mb-3 capitalize">
+              {status === 'queued' ? `In Queue ${grouped.queued.length}` : `Done ${grouped.done.length}`}
+            </h2>
+
+            <div className="flex flex-row flex-wrap gap-4 overflow-x-auto pb-4 mx-1">
+              {grouped[status].length === 0 ? (
+                <p className="text-sm text-zinc-500 italic">
+                  No shoes {status === 'queued' ? 'in queue' : 'done yet'}.
+                </p>
+              ) : (
+                grouped[status].map(r => (
+                  <div key={r.id} className="shrink-0">
+                    <RequestCard
+                      category={r.category}
+                      typeOfShoe={r.typeOfShoe}
+                      brand={r.brand}
+                      model={r.model}
+                      colourCode={r.colourCode}
+                      size={r.size}
+                      quantity={r.quantity}
+                      claimedBy={r.claimedBy}
+                      notes={r.notes}
+                      createdAt={r.createdAt}
+                      showAction={role === 'runner' && status === 'queued'}
+                      onAction={() => markAsDone(r.id)}
+                    />
+                  </div>
+                ))
               )}
-            </Droppable>
-          ))}
-        </div>
-      </DragDropContext>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Floating Add Button */}
+      {role === 'seller' && (
+        <button
+          onClick={() => router.push('/new-request')}
+          className="fixed bottom-6 right-6 z-50 w-14 h-14 flex items-center justify-center rounded-full bg-black text-yellow-400 text-3xl font-bold shadow-lg hover:bg-yellow-500 hover:text-black transition-all duration-300"
+          title="Add New Request"
+        >
+          +
+        </button>
+      )}
     </main>
   )
 }
