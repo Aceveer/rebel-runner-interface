@@ -23,8 +23,8 @@ export default function NewRequestPage() {
   ])
 
   useEffect(() => {
-  if (requests.length > 1) window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
-}, [requests.length])
+    if (requests.length > 1) window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })
+  }, [requests.length])
 
 
   const addAnother = () =>
@@ -43,12 +43,12 @@ export default function NewRequestPage() {
       },
     ])
 
-const removeRequest = (index: number) => {
-  if (requests.length === 1) return // prevent deleting the only one
-  const newReqs = [...requests]
-  newReqs.splice(index, 1)
-  setRequests(newReqs)
-}
+  const removeRequest = (index: number) => {
+    if (requests.length === 1) return // prevent deleting the only one
+    const newReqs = [...requests]
+    newReqs.splice(index, 1)
+    setRequests(newReqs)
+  }
 
   const updateField = (index: number, field: string, value: string | number) => {
     const newReqs = [...requests]
@@ -57,54 +57,54 @@ const removeRequest = (index: number) => {
     setRequests(newReqs)
   }
 
-async function handleSubmit(e: React.FormEvent) {
-  e.preventDefault()
-  setLoading(true)
-  setError(null)
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
 
-  try {
-    // 🧩 Validation for mandatory fields
-    for (const [index, req] of requests.entries()) {
-      if (
-        !req.category?.trim() ||
-        !req.typeOfShoe?.trim() ||
-        !req.brand?.trim() ||
-        !req.model?.trim() ||
-        !req.colourCode?.trim() ||
-        !req.size?.trim()
-      ) {
-        setLoading(false)
-        setError(`Fill in all mandatory fields for Request ${index + 1}`)
-        return
+    try {
+      // 🧩 Validation for mandatory fields
+      for (const [index, req] of requests.entries()) {
+        if (
+          !req.category?.trim() ||
+          !req.typeOfShoe?.trim() ||
+          !req.brand?.trim() ||
+          !req.model?.trim() ||
+          !req.colourCode?.trim() ||
+          !req.size?.trim()
+        ) {
+          setLoading(false)
+          setError(`Fill in all mandatory fields for Request ${index + 1}`)
+          return
+        }
       }
+
+      const user = auth.currentUser
+      if (!user) throw new Error('Not signed in')
+
+      const token = await user.getIdToken()
+      const res = await fetch('/api/requests', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(requests), // array payload
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to create request')
+      }
+
+      router.push('/home')
+    } catch (err: any) {
+      console.error(err)
+      setError(err.message || 'Fill in all mandatory fields')
+    } finally {
+      setLoading(false)
     }
-
-    const user = auth.currentUser
-    if (!user) throw new Error('Not signed in')
-
-    const token = await user.getIdToken()
-    const res = await fetch('/api/requests', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(requests), // array payload
-    })
-
-    if (!res.ok) {
-      const data = await res.json()
-      throw new Error(data.error || 'Failed to create request')
-    }
-
-    router.push('/home')
-  } catch (err: any) {
-    console.error(err)
-    setError(err.message || 'Fill in all mandatory fields')
-  } finally {
-    setLoading(false)
   }
-}
 
   return (
     <main className="min-h-screen flex justify-center items-start p-4 ">
@@ -139,19 +139,19 @@ async function handleSubmit(e: React.FormEvent) {
                 <option>Kids</option>
               </select>
 
-            {/* NEW: Shoe Type */}
-            <select
+              {/* NEW: Shoe Type */}
+              <select
                 className="border p-3 rounded-xl bg-black"
                 value={req.typeOfShoe || 'Running'}
                 onChange={e => updateField(i, 'typeOfShoe', e.target.value)}
-            >
+              >
                 <option>Running</option>
                 <option>Gym/Training</option>
                 <option>Casual</option>
                 <option>Raceday</option>
                 <option>Basketball</option>
                 <option>Cricket</option>
-            </select>
+              </select>
 
               <input
                 className="border p-3 rounded-xl"

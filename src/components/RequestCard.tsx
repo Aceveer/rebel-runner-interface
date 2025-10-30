@@ -13,7 +13,7 @@ type RequestCardProps = {
   claimedBy?: { name?: string } | null
   notes?: string | null
   createdAt?: { seconds: number }
-  createdBy?:{email:string}
+  createdBy?: { email: string }
   showAction?: boolean
   onAction?: () => void
   role: string
@@ -61,12 +61,12 @@ export default function RequestCard({
     elapsedMins < 2
       ? 'text-green-400'
       : elapsedMins < 5
-      ? 'text-yellow-400'
-      : 'text-red-400'
+        ? 'text-yellow-400'
+        : 'text-red-400'
 
   return (
     <div className={`flex w-2xs md:w-lg border rounded-2xl shadow-sm hover:shadow-md transition align-middle self-center`}>
-      
+
       {/* Left side (Category section) */}
       <div className="flex flex-col items-center justify-center w-16 md:w-24 rounded-l-2xl bg-zinc-800 p-2 border-r">
         <span className="text-4xl font-bold text-black dark:text-yellow-400">
@@ -87,12 +87,12 @@ export default function RequestCard({
             <span className="text-[10px] md:text-xs text-zinc-500">{colourCode || '—'}</span>
           </div>
 
-        {/* Middle: Timer */}
-        <div className="flex justify-center mt-6 mx-2 align-middle">
-          {elapsed && (role==="queued") && (
-            <span className={`text-sm md:text-lg ${textClass}`}>{elapsed}</span>
-          )}
-        </div>
+          {/* Middle: Timer */}
+          <div className="flex justify-center mt-6 mx-2 align-middle">
+            {elapsed && (role === "queued") && (
+              <span className={`text-sm md:text-lg ${textClass}`}>{elapsed}</span>
+            )}
+          </div>
 
           <div className="text-right">
             <p className="font-semibold text-sm md:text-base">{size}</p>

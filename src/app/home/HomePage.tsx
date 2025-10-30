@@ -52,9 +52,21 @@ export default function HomePage() {
       orderBy('createdAt', 'asc')
     )
     const unsub = onSnapshot(q, snap => {
-      const arr = snap.docs.map(d => ({ id: d.id, ...(d.data() as any) }))
+      const now = Date.now()
+      const cutoff = now - 24 * 60 * 60 * 1000 // 24 hours in milliseconds
+
+      const arr = snap.docs
+        .map(d => ({ id: d.id, ...(d.data() as any) }))
+        .filter(req => {
+          // ensure createdAt exists
+          if (!req.createdAt?.seconds) return false
+          const createdTime = req.createdAt.seconds * 1000
+          return createdTime > cutoff
+        })
+
       setRequests(arr)
     })
+
     return () => unsub()
   }, [])
 
@@ -89,9 +101,8 @@ export default function HomePage() {
           <button
             key={r}
             onClick={() => setRole(r as 'seller' | 'runner')}
-            className={`px-4 py-2 rounded-xl border transition ${
-              role === r ? 'bg-black text-yellow-400' : 'hover:bg-yellow-400 hover:text-black'
-            }`}
+            className={`px-4 py-2 rounded-xl border transition ${role === r ? 'bg-black text-yellow-400' : 'hover:bg-yellow-400 hover:text-black'
+              }`}
           >
             {r === 'seller' ? 'Seller View' : 'Runner View'}
           </button>
@@ -128,7 +139,7 @@ export default function HomePage() {
                       createdBy={r.createdBy}
                       showAction={role === 'runner' && status === 'queued'}
                       onAction={() => markAsDone(r.id)}
-                      role= {status}
+                      role={status}
                     />
                   </div>
                 ))
